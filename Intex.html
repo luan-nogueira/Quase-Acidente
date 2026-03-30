@@ -1,320 +1,433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financeiro do Casal</title>
+  <title>Quase-Acidente</title>
+
+  <meta name="theme-color" content="#0a192f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Quase-Acidente" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <header class="hero">
-      <div class="hero-text">
-        <span class="badge">💙 Site financeiro do casal</span>
-        <h1>Controle Financeiro - Março</h1>
-        <p>
-          Painel para acompanhar os gastos comuns, contas pessoais e parcelas do IPVA.
-        </p>
-      </div>
-
-      <div class="hero-total">
-        <p>Total geral do mês</p>
-        <h2>R$ 8.379,18</h2>
-        <span>Sem incluir itens sem valor preenchido</span>
+  <div class="mobile-app">
+    <header class="topbar">
+      <div class="topbar-badge">Segurança</div>
+      <div class="brand-wrap">
+        <div class="brand-icon">⚠️</div>
+        <div class="brand-text">
+          <h1>Quase-Acidente</h1>
+          <p>Registro e acompanhamento em tempo real</p>
+        </div>
       </div>
     </header>
 
-    <section class="summary-grid">
-      <div class="summary-card">
-        <p>Gastos comuns</p>
-        <h3>R$ 4.941,99</h3>
-      </div>
+    <main class="app-content">
+      <section class="summary-grid summary-grid-6">
+        <article class="summary-card">
+          <span class="summary-label">Registros</span>
+          <strong id="totalRegistros">0</strong>
+        </article>
 
-      <div class="summary-card">
-        <p>Luan</p>
-        <h3 class="green">R$ 2.344,19</h3>
-      </div>
+        <article class="summary-card alert">
+          <span class="summary-label">Abertos</span>
+          <strong id="totalAbertos">0</strong>
+        </article>
 
-      <div class="summary-card">
-        <p>Kelly</p>
-        <h3 class="orange">R$ 1.093,00</h3>
-      </div>
+        <article class="summary-card danger-soft">
+          <span class="summary-label">Risco alto/crítico</span>
+          <strong id="totalRiscoAlto">0</strong>
+        </article>
 
-      <div class="summary-card">
-        <p>Itens pendentes</p>
-        <h3 class="red">5</h3>
-      </div>
-    </section>
+        <article class="summary-card">
+          <span class="summary-label">Com plano de ação</span>
+          <strong id="totalPlano">0</strong>
+        </article>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Despesas de Março</h2>
-        <p>Tabela consolidada do casal</p>
-      </div>
+        <article class="summary-card">
+          <span class="summary-label">Registros hoje</span>
+          <strong id="totalHoje">0</strong>
+        </article>
 
-      <div class="table-box">
-        <table>
-          <thead>
-            <tr>
-              <th>Categoria</th>
-              <th>Descrição</th>
-              <th>Valor</th>
-              <th>Vencimento</th>
-              <th>Observação</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Condomínio</td>
-              <td>R$ 390,00</td>
-              <td>08/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Internet</td>
-              <td>R$ 80,00</td>
-              <td>10/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Luz</td>
-              <td>—</td>
-              <td>27/02</td>
-              <td>Valor não informado</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Gás</td>
-              <td>R$ 53,99</td>
-              <td>25/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Riachuelo</td>
-              <td>R$ 301,00</td>
-              <td>13/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Cartão Carrefour</td>
-              <td>R$ 405,00</td>
-              <td>21/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Cartão Renner</td>
-              <td>R$ 476,00</td>
-              <td>10/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>C&A</td>
-              <td>R$ 96,00</td>
-              <td>15/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Carro</td>
-              <td>R$ 1.500,00</td>
-              <td>20/03</td>
-              <td>Parcela 12/48</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Mercado Pago</td>
-              <td>R$ 1.640,00</td>
-              <td>22/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag common">Gastos comuns</span></td>
-              <td>Cartão Caixa</td>
-              <td>—</td>
-              <td>24/03</td>
-              <td>Valor não informado</td>
-            </tr>
+        <article class="summary-card wide">
+          <span class="summary-label">Última atualização</span>
+          <strong id="ultimaAtualizacao">--</strong>
+        </article>
+      </section>
 
-            <tr>
-              <td><span class="tag luan">Luan</span></td>
-              <td>Cartão Nubank</td>
-              <td>R$ 81,74</td>
-              <td>08/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag luan">Luan</span></td>
-              <td>Cartão Santander</td>
-              <td>R$ 22,00</td>
-              <td>07/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag luan">Luan</span></td>
-              <td>Cartão BB</td>
-              <td>R$ 2.076,81</td>
-              <td>09/03</td>
-              <td>Inclui R$ 300,00 mãe</td>
-            </tr>
-            <tr>
-              <td><span class="tag luan">Luan</span></td>
-              <td>Vivo</td>
-              <td>R$ 55,00</td>
-              <td>10/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag luan">Luan</span></td>
-              <td>Mercado Pago</td>
-              <td>R$ 108,64</td>
-              <td>12/03</td>
-              <td>-</td>
-            </tr>
-
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Claro</td>
-              <td>R$ 55,00</td>
-              <td>10/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Cartão Preto</td>
-              <td>R$ 153,00</td>
-              <td>20/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Cartão Inter</td>
-              <td>R$ 189,00</td>
-              <td>15/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Cartão Nubank</td>
-              <td>R$ 184,00</td>
-              <td>07/03</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Reneg. Itaú</td>
-              <td>R$ 70,00</td>
-              <td>—</td>
-              <td>Sem data</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Reneg. Casas Bahia</td>
-              <td>R$ 100,00</td>
-              <td>25/03</td>
-              <td>Parcela 10/10</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Faculdade</td>
-              <td>R$ 570,00</td>
-              <td>—</td>
-              <td>Sem data</td>
-            </tr>
-            <tr>
-              <td><span class="tag kelly">Kelly</span></td>
-              <td>Coren</td>
-              <td>—</td>
-              <td>—</td>
-              <td>Sem valor e data</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="bottom-grid">
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Resumo por pessoa</h2>
-          <p>Visão rápida</p>
-        </div>
-
-        <div class="resume-item">
+      <section class="panel card">
+        <div class="section-head">
           <div>
-            <strong>Luan</strong>
-            <span>5 lançamentos</span>
+            <h2 id="formTitle">Novo registro</h2>
+            <p id="formSubtitle">Preencha os dados da ocorrência.</p>
           </div>
-          <strong class="green">R$ 2.344,19</strong>
         </div>
 
-        <div class="resume-item">
+        <form id="formOcorrencia" class="form-grid">
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>1. Identificação</h3>
+              <p>Dados iniciais do registro.</p>
+            </div>
+
+            <div class="checklist-items">
+              <div class="grid-2">
+                <div class="field">
+                  <label for="dataRegistro">Data do registro</label>
+                  <input type="datetime-local" id="dataRegistro" required />
+                </div>
+
+                <div class="field">
+                  <label for="nomeColaborador">Nome do colaborador</label>
+                  <input type="text" id="nomeColaborador" placeholder="Digite o nome" required />
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="setorArea">Setor / Área</label>
+                  <select id="setorArea" required>
+                    <option value="">Selecione</option>
+                    <option value="Produção">Produção</option>
+                    <option value="Manutenção">Manutenção</option>
+                    <option value="Administrativo">Administrativo</option>
+                    <option value="Logística">Logística</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="unidadeLocal">Unidade / Local da ocorrência</label>
+                  <input type="text" id="unidadeLocal" placeholder="Ex.: Pier, Área 1, Oficina..." required />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>2. Classificação</h3>
+              <p>Classifique o tipo e o nível do risco.</p>
+            </div>
+
+            <div class="checklist-items">
+              <article class="check-item">
+                <div class="field full">
+                  <label>Tipo de ocorrência</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="tipoOcorrencia" value="Condição insegura" required />
+                      Condição insegura
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="tipoOcorrencia" value="Ato inseguro" />
+                      Ato inseguro
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="tipoOcorrencia" value="Quase acidente (Near Miss)" />
+                      Quase acidente (Near Miss)
+                    </label>
+                  </div>
+                </div>
+              </article>
+
+              <article class="check-item">
+                <div class="field full">
+                  <label>Categoria do risco</label>
+                  <div class="check-grid">
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Queda de altura" /> Queda de altura</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Risco elétrico" /> Risco elétrico</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Risco mecânico" /> Risco mecânico</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Ergonomia" /> Ergonomia</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Produtos químicos" /> Produtos químicos</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Organização / limpeza" /> Organização / limpeza</label>
+                    <label class="check-inline"><input type="checkbox" name="categoriaRisco" value="Uso inadequado de EPI" /> Uso inadequado de EPI</label>
+                    <label class="check-inline"><input type="checkbox" id="categoriaOutrosCheck" name="categoriaRisco" value="Outros" /> Outros</label>
+                  </div>
+                </div>
+
+                <div class="field full hidden" id="categoriaOutrosWrap">
+                  <label for="categoriaOutrosTexto">Descreva o(s) outro(s) risco(s)</label>
+                  <input type="text" id="categoriaOutrosTexto" placeholder="Digite a categoria adicional" />
+                </div>
+              </article>
+
+              <article class="check-item">
+                <div class="field full">
+                  <label>Nível de risco</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="nivelRisco" value="Baixo" required />
+                      Baixo
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="nivelRisco" value="Médio" />
+                      Médio
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="nivelRisco" value="Alto" />
+                      Alto
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="nivelRisco" value="Crítico" />
+                      Crítico
+                    </label>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>3. Descrição</h3>
+              <p>Descreva a situação observada com detalhes.</p>
+            </div>
+
+            <div class="checklist-items">
+              <div class="field full">
+                <label for="descricaoSituacao">Descreva a situação observada</label>
+                <textarea id="descricaoSituacao" placeholder="Detalhe o máximo possível o ocorrido." required></textarea>
+              </div>
+
+              <article class="check-item">
+                <div class="field full">
+                  <label>Essa situação poderia causar lesão?</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="poderiaCausarLesao" value="Sim" required />
+                      Sim
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="poderiaCausarLesao" value="Não" />
+                      Não
+                    </label>
+                  </div>
+                </div>
+              </article>
+
+              <div class="field full hidden" id="tipoLesaoWrap">
+                <label for="tipoLesao">Se sim, qual tipo de lesão poderia ocorrer?</label>
+                <textarea id="tipoLesao" placeholder="Ex.: corte, fratura, choque elétrico, contusão..."></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>4. Evidências</h3>
+              <p>Anexe uma foto da situação observada.</p>
+            </div>
+
+            <div class="checklist-items">
+              <div class="field full">
+                <label for="fotoOcorrencia">Anexar foto da situação</label>
+                <input type="file" id="fotoOcorrencia" accept="image/*" />
+                <small class="helper-note">No cadastro novo a foto é obrigatória. Em edição, só envie outra se quiser substituir.</small>
+              </div>
+
+              <div class="photo-preview hidden" id="fotoPreviewWrap">
+                <img id="fotoPreview" alt="Pré-visualização da foto" />
+              </div>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>5. Ação imediata</h3>
+              <p>Informe se houve ação imediata e qual foi.</p>
+            </div>
+
+            <div class="checklist-items">
+              <article class="check-item">
+                <div class="field full">
+                  <label>Foi realizada alguma ação imediata?</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="acaoImediataRealizada" value="Sim" required />
+                      Sim
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="acaoImediataRealizada" value="Não" />
+                      Não
+                    </label>
+                  </div>
+                </div>
+              </article>
+
+              <div class="field full hidden" id="acaoTomadaWrap">
+                <label for="acaoTomada">Descreva a ação tomada</label>
+                <textarea id="acaoTomada" placeholder="Descreva a ação imediata realizada"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>6. Plano de ação</h3>
+              <p>Preencha quando houver necessidade de tratativa.</p>
+            </div>
+
+            <div class="checklist-items">
+              <article class="check-item">
+                <div class="field full">
+                  <label>Necessita plano de ação?</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="necessitaPlanoAcao" value="Sim" required />
+                      Sim
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="necessitaPlanoAcao" value="Não" />
+                      Não
+                    </label>
+                  </div>
+                </div>
+              </article>
+
+              <div class="grid-2 hidden" id="planoAcaoWrap">
+                <div class="field">
+                  <label for="responsavelAcao">Responsável pela ação</label>
+                  <input type="text" id="responsavelAcao" placeholder="Nome do responsável" />
+                </div>
+
+                <div class="field">
+                  <label for="prazoConclusao">Prazo para conclusão</label>
+                  <input type="date" id="prazoConclusao" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="checklist-section">
+            <div class="checklist-header">
+              <h3>7. Acompanhamento (SESMT / Gestão)</h3>
+              <p>Campos para acompanhamento, verificação e conclusão.</p>
+            </div>
+
+            <div class="checklist-items">
+              <article class="check-item">
+                <div class="field full">
+                  <label>Status da ocorrência</label>
+                  <div class="option-group">
+                    <label class="option-pill">
+                      <input type="radio" name="statusOcorrencia" value="Aberto" required />
+                      Aberto
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="statusOcorrencia" value="Em andamento" />
+                      Em andamento
+                    </label>
+                    <label class="option-pill">
+                      <input type="radio" name="statusOcorrencia" value="Concluído" />
+                      Concluído
+                    </label>
+                  </div>
+                </div>
+              </article>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="responsavelVerificacao">Responsável pela verificação</label>
+                  <input type="text" id="responsavelVerificacao" placeholder="Nome do responsável" />
+                </div>
+
+                <div class="field">
+                  <label for="dataVerificacao">Data da verificação</label>
+                  <input type="date" id="dataVerificacao" />
+                </div>
+              </div>
+
+              <div class="field full">
+                <label for="observacoesFinais">Observações finais / evidência de conclusão</label>
+                <textarea id="observacoesFinais" placeholder="Descreva a conclusão, evidências e observações finais"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <div class="message-box" id="saveMsg">Sistema pronto para uso.</div>
+
+          <div class="actions-bar full">
+            <button class="btn btn-light" id="cancelEditBtn" type="button" hidden>Cancelar edição</button>
+            <button class="btn btn-primary" id="submitBtn" type="submit">Salvar registro</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel card">
+        <div class="section-head section-head-stack">
           <div>
-            <strong>Kelly</strong>
-            <span>8 lançamentos, 1 sem valor</span>
+            <h2>Registros</h2>
+            <p>Clique no card para ver, editar ou excluir</p>
           </div>
-          <strong class="orange">R$ 1.093,00</strong>
-        </div>
 
-        <div class="resume-item">
-          <div>
-            <strong>Gastos comuns</strong>
-            <span>11 lançamentos, 2 sem valor</span>
-          </div>
-          <strong>R$ 4.941,99</strong>
-        </div>
-      </div>
+          <div class="filters-bar filters-bar-advanced">
+            <div class="field">
+              <label for="filtroNome">Buscar por colaborador</label>
+              <input type="text" id="filtroNome" placeholder="Digite o nome..." />
+            </div>
 
-      <div class="panel">
-        <div class="panel-header">
-          <h2>IPVA do carro</h2>
-          <p>Acompanhamento 2026</p>
-        </div>
+            <div class="field">
+              <label for="filtroStatus">Status</label>
+              <select id="filtroStatus">
+                <option value="">Todos</option>
+                <option value="Aberto">Aberto</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Concluído">Concluído</option>
+              </select>
+            </div>
 
-        <div class="resume-item">
-          <div>
-            <strong>30/01/2026</strong>
-            <span>1ª parcela</span>
-          </div>
-          <div class="status-box">
-            <strong>R$ 772,77</strong>
-            <span class="status paid">Pago ✅</span>
-          </div>
-        </div>
+            <div class="field">
+              <label for="filtroDataInicio">Data inicial</label>
+              <input type="date" id="filtroDataInicio" />
+            </div>
 
-        <div class="resume-item">
-          <div>
-            <strong>03/03/2026</strong>
-            <span>2ª parcela</span>
+            <div class="field">
+              <label for="filtroDataFim">Data final</label>
+              <input type="date" id="filtroDataFim" />
+            </div>
           </div>
-          <div class="status-box">
-            <strong>R$ 772,77</strong>
-            <span class="status open">Em aberto</span>
+
+          <div class="toolbar-bar">
+            <button class="btn btn-light" id="btnLimparFiltros" type="button">Limpar filtros</button>
+            <button class="btn btn-light" id="btnExportarExcel" type="button">Exportar Excel</button>
           </div>
         </div>
 
-        <div class="resume-item">
-          <div>
-            <strong>07/04/2026</strong>
-            <span>3ª parcela</span>
-          </div>
-          <div class="status-box">
-            <strong>R$ 772,78</strong>
-            <span class="status next">Próxima</span>
-          </div>
-        </div>
-      </div>
-    </section>
+        <ul class="records-list" id="lista"></ul>
 
-    <footer class="footer">
-      <p>Alguns itens ainda estão sem valor ou sem data preenchida.</p>
-    </footer>
+        <div class="load-more-wrap load-more-wrap-double">
+          <button class="btn btn-light" id="btnVerMais" type="button">Ver mais</button>
+          <button class="btn btn-light" id="btnVerMenos" type="button">Ver menos</button>
+        </div>
+      </section>
+    </main>
   </div>
+
+  <div class="modal-overlay hidden" id="detailsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle">Detalhes do registro</h3>
+          <p id="modalSubtitle">Visualização completa</p>
+        </div>
+        <button class="modal-close" id="closeModalBtn" type="button">✕</button>
+      </div>
+
+      <div class="modal-body" id="modalBody"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-light" id="modalEditBtn" type="button">Editar</button>
+        <button class="btn btn-danger" id="modalDeleteBtn" type="button">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
