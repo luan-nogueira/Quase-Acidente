@@ -34,7 +34,14 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+let analytics = null;
+try {
+  analytics = getAnalytics(app);
+} catch (error) {
+  console.warn("Analytics não iniciado neste ambiente:", error);
+}
+
 const db = getFirestore(app);
 const storage = getStorage(app);
 
@@ -325,10 +332,6 @@ function validarDados(dados) {
     return "Descreva o tipo de lesão que poderia ocorrer.";
   }
 
-  if (!editingDocId && !currentPhotoBase64 && !currentUploadedPhotoURL) {
-    return "Anexe uma foto da situação.";
-  }
-
   if (dados.acaoImediata.realizada === "Sim" && !dados.acaoImediata.descricao) {
     return "Descreva a ação imediata tomada.";
   }
@@ -344,7 +347,6 @@ function validarDados(dados) {
 
   return "";
 }
-
 function atualizarModoFormulario() {
   const emEdicao = !!editingDocId;
   submitBtn.textContent = emEdicao ? "Atualizar registro" : "Salvar registro";
@@ -680,6 +682,13 @@ function estimarTamanhoBase64(base64) {
 }
 
 async function uploadFotoBase64(base64, docId) {
+  if (!base64) {
+    return {
+      url: "",
+      path: ""
+    };
+  }
+
   const caminho = `quase-acidentes/${docId}/${Date.now()}.jpg`;
   const storageRef = ref(storage, caminho);
 
@@ -723,7 +732,9 @@ fotoOcorrencia.addEventListener("change", async () => {
   const arquivo = fotoOcorrencia.files?.[0];
 
   if (!arquivo) {
+    currentPhotoBase64 = "";
     exibirPreviewFoto(currentUploadedPhotoURL || "");
+    setMensagem("Nenhuma foto selecionada.");
     return;
   }
 
@@ -734,7 +745,7 @@ fotoOcorrencia.addEventListener("change", async () => {
 
     if (tamanhoEstimado > IMAGE_MAX_BYTES) {
       currentPhotoBase64 = "";
-      exibirPreviewFoto("");
+      exibirPreviewFoto(currentUploadedPhotoURL || "");
       setMensagem("A imagem ainda ficou muito grande. Escolha uma foto menor.", true);
       fotoOcorrencia.value = "";
       return;
@@ -746,7 +757,7 @@ fotoOcorrencia.addEventListener("change", async () => {
   } catch (error) {
     console.error("Erro ao processar imagem:", error);
     currentPhotoBase64 = "";
-    exibirPreviewFoto("");
+    exibirPreviewFoto(currentUploadedPhotoURL || "");
     setMensagem("Erro ao processar imagem.", true);
   }
 });
@@ -882,12 +893,14 @@ form.addEventListener("submit", async (e) => {
       setMensagem("Enviando foto...");
       const upload = await uploadFotoBase64(currentPhotoBase64, docId);
 
-      if (fotoPath && fotoPath !== upload.path) {
-        await excluirFotoStorage(fotoPath);
-      }
+      if (upload.url) {
+        if (fotoPath && fotoPath !== upload.path) {
+          await excluirFotoStorage(fotoPath);
+        }
 
-      fotoURL = upload.url;
-      fotoPath = upload.path;
+        fotoURL = upload.url;
+        fotoPath = upload.path;
+      }
     }
 
     const payload = {
