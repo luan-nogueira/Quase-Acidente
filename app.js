@@ -1,11 +1,51 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+  getStorage,
+  ref,
+  uploadString,
+  getDownloadURL,
+  deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
 // =========================
-// CONFIG LOCAL
+// FIREBASE
 // =========================
-const STORAGE_KEY = "quase-acidentes-local";
+const firebaseConfig = {
+  apiKey: "AIzaSyAyEth1yYCKhk--z321-_muWnuLmPoVfEg",
+  authDomain: "quase-a.firebaseapp.com",
+  projectId: "quase-a",
+  storageBucket: "quase-a.firebasestorage.app",
+  messagingSenderId: "955542986429",
+  appId: "1:955542986429:web:e96a842814e22641f821d4",
+  measurementId: "G-R6825KWJMG"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// =========================
+// CONFIG
+// =========================
+const COLLECTION_NAME = "quase-acidentes";
 const PAGE_SIZE = 5;
-const IMAGE_MAX_WIDTH = 960;
-const IMAGE_QUALITY = 0.65;
-const IMAGE_MAX_BYTES = 900000;
+const IMAGE_MAX_WIDTH = 1280;
+const IMAGE_QUALITY = 0.72;
+const IMAGE_MAX_BYTES = 850000;
 
 // =========================
 // ELEMENTOS
@@ -78,6 +118,8 @@ let currentDocsCache = [];
 let openedDocId = null;
 let visibleCount = PAGE_SIZE;
 let currentPhotoBase64 = "";
+let currentUploadedPhotoURL = "";
+let currentUploadedPhotoPath = "";
 
 // =========================
 // DATA E HORA
@@ -92,71 +134,13 @@ function agoraLocalInput() {
 dataRegistro.value = agoraLocalInput();
 
 // =========================
-// STORAGE LOCAL
+// HELPERS
 // =========================
 function gerarId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function carregarRegistrosLocal() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const dados = raw ? JSON.parse(raw) : [];
-    return Array.isArray(dados) ? dados : [];
-  } catch (error) {
-    console.error("Erro ao ler localStorage:", error);
-    return [];
-  }
-}
-
-function salvarListaLocal(lista) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-}
-
-function ordenarRegistros(lista) {
-  return [...lista].sort((a, b) => {
-    const dataA = new Date(b?.atualizadoEm || b?.criadoEm || 0).getTime();
-    const dataB = new Date(a?.atualizadoEm || a?.criadoEm || 0).getTime();
-    return dataA - dataB;
-  });
-}
-
-function sincronizarCacheLocal() {
-  currentDocsCache = ordenarRegistros(carregarRegistrosLocal());
-  reaplicarRenderizacao();
-}
-
-function salvarRegistroLocal(payload, docId) {
-  const lista = carregarRegistrosLocal();
-  const index = lista.findIndex((item) => item.__docId === docId);
-
-  if (index >= 0) {
-    lista[index] = {
-      ...lista[index],
-      ...payload,
-      __docId: docId
-    };
-  } else {
-    lista.push({
-      ...payload,
-      __docId: docId
-    });
-  }
-
-  salvarListaLocal(lista);
-  sincronizarCacheLocal();
-}
-
-function excluirRegistroLocal(docId) {
-  const lista = carregarRegistrosLocal().filter((item) => item.__docId !== docId);
-  salvarListaLocal(lista);
-  sincronizarCacheLocal();
-}
-
-// =========================
-// HELPERS
-// =========================
 function setMensagem(msg, erro = false) {
   saveMsg.textContent = msg;
   saveMsg.className = erro ? "message-box error" : "message-box success";
@@ -190,7 +174,11 @@ function formatarDataBR(valor) {
 
 function formatarTimestamp(timestamp) {
   if (!timestamp) return "--";
-  const data = new Date(timestamp);
+
+  const data = typeof timestamp?.toDate === "function"
+    ? timestamp.toDate()
+    : new Date(timestamp);
+
   if (Number.isNaN(data.getTime())) return "--";
 
   return data.toLocaleString("pt-BR", {
@@ -297,7 +285,8 @@ function montarDadosFormulario() {
       tipoLesao: tipoLesao.value.trim()
     },
     evidencias: {
-      fotoBase64: currentPhotoBase64 || ""
+      fotoURL: currentUploadedPhotoURL || "",
+      fotoPath: currentUploadedPhotoPath || ""
     },
     acaoImediata: {
       realizada: obterRadioSelecionado("acaoImediataRealizada"),
@@ -336,7 +325,7 @@ function validarDados(dados) {
     return "Descreva o tipo de lesão que poderia ocorrer.";
   }
 
-  if (!editingDocId && !currentPhotoBase64) {
+  if (!editingDocId && !currentUploadedPhotoURL) {
     return "Anexe uma foto da situação.";
   }
 
@@ -393,9 +382,12 @@ function preencherFormulario(dados) {
   dataVerificacao.value = dados?.acompanhamento?.dataVerificacao || "";
   observacoesFinais.value = dados?.acompanhamento?.observacoesFinais || "";
 
-  currentPhotoBase64 = dados?.evidencias?.fotoBase64 || "";
+  currentPhotoBase64 = "";
+  currentUploadedPhotoURL = dados?.evidencias?.fotoURL || "";
+  currentUploadedPhotoPath = dados?.evidencias?.fotoPath || "";
+
   fotoOcorrencia.value = "";
-  exibirPreviewFoto(currentPhotoBase64);
+  exibirPreviewFoto(currentUploadedPhotoURL);
   atualizarCamposCondicionais();
 }
 
@@ -405,6 +397,8 @@ function limparFormulario() {
 
   editingDocId = null;
   currentPhotoBase64 = "";
+  currentUploadedPhotoURL = "";
+  currentUploadedPhotoPath = "";
 
   limparRadio("tipoOcorrencia");
   limparRadio("nivelRisco");
@@ -544,11 +538,11 @@ function montarDetalhesModal(dados) {
     categorias.push(`Detalhe: ${dados.classificacao.categoriaOutrosTexto}`);
   }
 
-  const fotoHtml = dados?.evidencias?.fotoBase64
+  const fotoHtml = dados?.evidencias?.fotoURL
     ? `
       <section class="detail-group">
         <h4>Foto da ocorrência</h4>
-        <img class="detail-photo" src="${dados.evidencias.fotoBase64}" alt="Foto da ocorrência" />
+        <img class="detail-photo" src="${dados.evidencias.fotoURL}" alt="Foto da ocorrência" />
       </section>
     `
     : "";
@@ -685,6 +679,29 @@ function estimarTamanhoBase64(base64) {
   return Math.round((base64.length * 3) / 4);
 }
 
+async function uploadFotoBase64(base64, docId) {
+  const caminho = `quase-acidentes/${docId}/${Date.now()}.jpg`;
+  const storageRef = ref(storage, caminho);
+
+  await uploadString(storageRef, base64, "data_url");
+  const downloadURL = await getDownloadURL(storageRef);
+
+  return {
+    url: downloadURL,
+    path: caminho
+  };
+}
+
+async function excluirFotoStorage(path) {
+  if (!path) return;
+  try {
+    const storageRef = ref(storage, path);
+    await deleteObject(storageRef);
+  } catch (error) {
+    console.warn("Não foi possível excluir a foto antiga do Storage:", error);
+  }
+}
+
 // =========================
 // EVENTOS UI
 // =========================
@@ -706,7 +723,7 @@ fotoOcorrencia.addEventListener("change", async () => {
   const arquivo = fotoOcorrencia.files?.[0];
 
   if (!arquivo) {
-    exibirPreviewFoto(currentPhotoBase64 || "");
+    exibirPreviewFoto(currentUploadedPhotoURL || "");
     return;
   }
 
@@ -766,7 +783,7 @@ modalEditBtn.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-modalDeleteBtn.addEventListener("click", () => {
+modalDeleteBtn.addEventListener("click", async () => {
   if (!openedDocId) return;
 
   const dados = currentDocsCache.find((item) => item.__docId === openedDocId);
@@ -775,14 +792,23 @@ modalDeleteBtn.addEventListener("click", () => {
 
   if (!confirmar) return;
 
-  excluirRegistroLocal(openedDocId);
+  try {
+    await deleteDoc(doc(db, COLLECTION_NAME, openedDocId));
 
-  if (editingDocId === openedDocId) {
-    limparFormulario();
+    if (dados?.evidencias?.fotoPath) {
+      await excluirFotoStorage(dados.evidencias.fotoPath);
+    }
+
+    if (editingDocId === openedDocId) {
+      limparFormulario();
+    }
+
+    setMensagem("Registro excluído com sucesso.");
+    fecharModal();
+  } catch (error) {
+    console.error("Erro ao excluir registro:", error);
+    setMensagem(`Erro ao excluir registro: ${error.message}`, true);
   }
-
-  setMensagem("Registro excluído com sucesso.");
-  fecharModal();
 });
 
 btnVerMais.addEventListener("click", () => {
@@ -848,15 +874,33 @@ form.addEventListener("submit", async (e) => {
 
     const docId = editingDocId || gerarId();
     const dadosExistentes = currentDocsCache.find((item) => item.__docId === docId);
-    const agora = new Date().toISOString();
+
+    let fotoURL = dadosExistentes?.evidencias?.fotoURL || "";
+    let fotoPath = dadosExistentes?.evidencias?.fotoPath || "";
+
+    if (currentPhotoBase64) {
+      setMensagem("Enviando foto...");
+      const upload = await uploadFotoBase64(currentPhotoBase64, docId);
+
+      if (fotoPath && fotoPath !== upload.path) {
+        await excluirFotoStorage(fotoPath);
+      }
+
+      fotoURL = upload.url;
+      fotoPath = upload.path;
+    }
 
     const payload = {
       ...dados,
-      criadoEm: dadosExistentes?.criadoEm || agora,
-      atualizadoEm: agora
+      evidencias: {
+        fotoURL,
+        fotoPath
+      },
+      criadoEm: dadosExistentes?.criadoEm || serverTimestamp(),
+      atualizadoEm: serverTimestamp()
     };
 
-    salvarRegistroLocal(payload, docId);
+    await setDoc(doc(db, COLLECTION_NAME, docId), payload, { merge: true });
 
     setMensagem(editingDocId ? "Registro atualizado com sucesso." : "Registro salvo com sucesso.");
     limparFormulario();
@@ -869,9 +913,31 @@ form.addEventListener("submit", async (e) => {
 });
 
 // =========================
+// LISTENER FIRESTORE
+// =========================
+const q = query(collection(db, COLLECTION_NAME), orderBy("atualizadoEm", "desc"));
+
+onSnapshot(q, (snapshot) => {
+  currentDocsCache = snapshot.docs.map((docSnap) => ({
+    __docId: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  reaplicarRenderizacao();
+}, (error) => {
+  console.error("Erro ao carregar registros:", error);
+  lista.innerHTML = `
+    <li class="empty-state">
+      <strong>Erro ao carregar registros.</strong>
+      <span>${escapeHtml(error.message || "Verifique as permissões do Firestore.")}</span>
+    </li>
+  `;
+  setMensagem(`Erro ao carregar registros: ${error.message}`, true);
+});
+
+// =========================
 // INÍCIO
 // =========================
 atualizarCamposCondicionais();
 atualizarModoFormulario();
-sincronizarCacheLocal();
 setMensagem("Sistema pronto para uso.");
