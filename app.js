@@ -325,7 +325,7 @@ function validarDados(dados) {
     return "Descreva o tipo de lesão que poderia ocorrer.";
   }
 
-  if (!editingDocId && !currentUploadedPhotoURL) {
+  if (!editingDocId && !currentPhotoBase64 && !currentUploadedPhotoURL) {
     return "Anexe uma foto da situação.";
   }
 
