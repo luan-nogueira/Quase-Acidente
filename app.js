@@ -11,35 +11,29 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
 // =========================
 // FIREBASE
 // =========================
 const firebaseConfig = {
-  apiKey: "AIzaSyDReYPPhvjjQ4DdLOeQQDg_PrqPCwYaFfU",
-  authDomain: "motorista-80298.firebaseapp.com",
-  projectId: "motorista-80298",
-  storageBucket: "motorista-80298.firebasestorage.app",
-  messagingSenderId: "988614619560",
-  appId: "1:988614619560:web:f2521ff21aae96aa486d9d",
-  measurementId: "G-S1T8661860"
+  apiKey: "AIzaSyAyEth1yYCKhk--z321-_muWnuLmPoVfEg",
+  authDomain: "quase-a.firebaseapp.com",
+  projectId: "quase-a",
+  storageBucket: "quase-a.firebasestorage.app",
+  messagingSenderId: "955542986429",
+  appId: "1:955542986429:web:e96a842814e22641f821d4",
+  measurementId: "G-R6825KWJMG"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 // =========================
 // CONFIG
 // =========================
 const COLLECTION_NAME = "quase-acidentes";
 const PAGE_SIZE = 5;
+const IMAGE_MAX_WIDTH = 1280;
+const IMAGE_QUALITY = 0.72;
 
 // =========================
 // ELEMENTOS
@@ -95,7 +89,6 @@ const filtroDataFimEl = document.getElementById("filtroDataFim");
 const btnLimparFiltros = document.getElementById("btnLimparFiltros");
 const btnVerMais = document.getElementById("btnVerMais");
 const btnVerMenos = document.getElementById("btnVerMenos");
-const btnExportarExcel = document.getElementById("btnExportarExcel");
 
 const detailsModal = document.getElementById("detailsModal");
 const modalBody = document.getElementById("modalBody");
@@ -112,8 +105,7 @@ let editingDocId = null;
 let currentDocsCache = [];
 let openedDocId = null;
 let visibleCount = PAGE_SIZE;
-let currentPhotoUrl = "";
-let currentPhotoPath = "";
+let currentPhotoBase64 = "";
 
 // =========================
 // DATA E HORA
@@ -147,11 +139,7 @@ function escapeHtml(valor) {
 function formatarDataHoraBR(valor) {
   if (!valor) return "--";
   const data = new Date(valor);
-
-  if (Number.isNaN(data.getTime())) {
-    return String(valor).replace("T", " ");
-  }
-
+  if (Number.isNaN(data.getTime())) return String(valor).replace("T", " ");
   return data.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -167,7 +155,6 @@ function formatarDataBR(valor) {
 
 function formatarTimestamp(timestamp) {
   if (!timestamp) return "--";
-
   const data = typeof timestamp?.toDate === "function"
     ? timestamp.toDate()
     : new Date(timestamp);
@@ -178,15 +165,6 @@ function formatarTimestamp(timestamp) {
     dateStyle: "short",
     timeStyle: "short"
   });
-}
-
-function formatarDataArquivo(date = new Date()) {
-  const ano = date.getFullYear();
-  const mes = String(date.getMonth() + 1).padStart(2, "0");
-  const dia = String(date.getDate()).padStart(2, "0");
-  const hora = String(date.getHours()).padStart(2, "0");
-  const minuto = String(date.getMinutes()).padStart(2, "0");
-  return `${ano}-${mes}-${dia}_${hora}-${minuto}`;
 }
 
 function mesmaDataLocal(dataA, dataB) {
@@ -225,23 +203,6 @@ function marcarCategorias(valores = []) {
   document.querySelectorAll('input[name="categoriaRisco"]').forEach((checkbox) => {
     checkbox.checked = valores.includes(checkbox.value);
   });
-}
-
-function nivelRiscoBadgeClass(nivel = "") {
-  const valor = String(nivel).toLowerCase();
-  if (valor === "baixo") return "badge-low";
-  if (valor === "médio" || valor === "medio") return "badge-medium";
-  if (valor === "alto") return "badge-high";
-  if (valor === "crítico" || valor === "critico") return "badge-critical";
-  return "badge-medium";
-}
-
-function statusBadgeClass(status = "") {
-  const valor = String(status).toLowerCase();
-  if (valor === "aberto") return "badge-open";
-  if (valor === "em andamento") return "badge-progress";
-  if (valor === "concluído" || valor === "concluido") return "badge-done";
-  return "badge-progress";
 }
 
 function nivelRiscoAlto(dados) {
@@ -304,8 +265,7 @@ function montarDadosFormulario() {
       tipoLesao: tipoLesao.value.trim()
     },
     evidencias: {
-      fotoUrl: currentPhotoUrl || "",
-      fotoPath: currentPhotoPath || ""
+      fotoBase64: currentPhotoBase64 || ""
     },
     acaoImediata: {
       realizada: obterRadioSelecionado("acaoImediataRealizada"),
@@ -333,10 +293,7 @@ function validarDados(dados) {
 
   if (!dados.classificacao.tipoOcorrencia) return "Selecione o tipo de ocorrência.";
   if (!dados.classificacao.categoriasRisco.length) return "Selecione ao menos uma categoria de risco.";
-  if (
-    dados.classificacao.categoriasRisco.includes("Outros") &&
-    !dados.classificacao.categoriaOutrosTexto
-  ) {
+  if (dados.classificacao.categoriasRisco.includes("Outros") && !dados.classificacao.categoriaOutrosTexto) {
     return "Descreva a categoria de risco em Outros.";
   }
   if (!dados.classificacao.nivelRisco) return "Selecione o nível de risco.";
@@ -347,7 +304,7 @@ function validarDados(dados) {
     return "Descreva o tipo de lesão que poderia ocorrer.";
   }
 
-  if (!editingDocId && !fotoOcorrencia.files?.length) {
+  if (!editingDocId && !currentPhotoBase64) {
     return "Anexe uma foto da situação.";
   }
 
@@ -367,26 +324,14 @@ function validarDados(dados) {
   return "";
 }
 
-async function fazerUploadFoto(docId) {
-  const arquivo = fotoOcorrencia.files?.[0];
-  if (!arquivo) {
-    return {
-      fotoUrl: currentPhotoUrl || "",
-      fotoPath: currentPhotoPath || ""
-    };
-  }
-
-  const extensao = arquivo.name.includes(".")
-    ? arquivo.name.split(".").pop()
-    : "jpg";
-
-  const caminho = `quase-acidentes/${docId}/${Date.now()}.${extensao}`;
-  const storageRef = ref(storage, caminho);
-
-  await uploadBytes(storageRef, arquivo);
-  const fotoUrl = await getDownloadURL(storageRef);
-
-  return { fotoUrl, fotoPath: caminho };
+function atualizarModoFormulario() {
+  const emEdicao = !!editingDocId;
+  submitBtn.textContent = emEdicao ? "Atualizar registro" : "Salvar registro";
+  cancelEditBtn.hidden = !emEdicao;
+  formTitle.textContent = emEdicao ? "Editar registro" : "Novo registro";
+  formSubtitle.textContent = emEdicao
+    ? "Altere os dados do registro selecionado."
+    : "Preencha os dados da ocorrência.";
 }
 
 function preencherFormulario(dados) {
@@ -416,11 +361,9 @@ function preencherFormulario(dados) {
   dataVerificacao.value = dados?.acompanhamento?.dataVerificacao || "";
   observacoesFinais.value = dados?.acompanhamento?.observacoesFinais || "";
 
-  currentPhotoUrl = dados?.evidencias?.fotoUrl || "";
-  currentPhotoPath = dados?.evidencias?.fotoPath || "";
+  currentPhotoBase64 = dados?.evidencias?.fotoBase64 || "";
   fotoOcorrencia.value = "";
-  exibirPreviewFoto(currentPhotoUrl);
-
+  exibirPreviewFoto(currentPhotoBase64);
   atualizarCamposCondicionais();
 }
 
@@ -429,8 +372,7 @@ function limparFormulario() {
   dataRegistro.value = agoraLocalInput();
 
   editingDocId = null;
-  currentPhotoUrl = "";
-  currentPhotoPath = "";
+  currentPhotoBase64 = "";
 
   limparRadio("tipoOcorrencia");
   limparRadio("nivelRisco");
@@ -446,23 +388,9 @@ function limparFormulario() {
   exibirPreviewFoto("");
   atualizarCamposCondicionais();
   atualizarModoFormulario();
+  setMensagem("Sistema pronto para uso.");
 }
 
-function atualizarModoFormulario() {
-  const emEdicao = !!editingDocId;
-
-  submitBtn.textContent = emEdicao ? "Atualizar registro" : "Salvar registro";
-  cancelEditBtn.hidden = !emEdicao;
-
-  formTitle.textContent = emEdicao ? "Editar registro" : "Novo registro";
-  formSubtitle.textContent = emEdicao
-    ? "Altere os dados do registro selecionado."
-    : "Preencha os dados da ocorrência.";
-}
-
-// =========================
-// FILTROS / LISTA
-// =========================
 function getRegistrosFiltrados() {
   const nome = filtroNomeEl.value.trim().toLowerCase();
   const status = filtroStatusEl.value;
@@ -498,15 +426,8 @@ function montarCard(dados) {
     chipStatus = `<span class="risk-chip">🚨 ${escapeHtml(nivel)}</span>`;
   }
 
-  const cardClass =
-    String(status).toLowerCase() === "concluído" || String(status).toLowerCase() === "concluido"
-      ? "done-card"
-      : nivelRiscoAlto(dados)
-        ? "high-risk-card"
-        : "alert-card";
-
   return `
-    <article class="status-card status-card-clickable ${cardClass}" data-open-id="${escapeHtml(dados.__docId)}">
+    <article class="status-card" data-open-id="${escapeHtml(dados.__docId)}">
       <div class="status-card-mini-content">
         <div>
           <h3 class="status-card-title">${escapeHtml(nome)}</h3>
@@ -537,8 +458,6 @@ function renderizarLista() {
         <span>Tente ajustar os filtros ou criar um novo registro.</span>
       </li>
     `;
-    btnVerMais.classList.add("hidden");
-    btnVerMenos.classList.add("hidden");
     return;
   }
 
@@ -547,9 +466,6 @@ function renderizarLista() {
     li.innerHTML = montarCard(dados);
     lista.appendChild(li);
   });
-
-  btnVerMais.classList.toggle("hidden", filtrados.length <= visibleCount);
-  btnVerMenos.classList.toggle("hidden", visibleCount <= PAGE_SIZE);
 }
 
 function atualizarResumo(registros) {
@@ -581,65 +497,11 @@ function reaplicarRenderizacao() {
   atualizarResumo(currentDocsCache);
 }
 
-// =========================
-// EXPORTAR EXCEL
-// =========================
-function gerarLinhasExcel(registros) {
-  return registros.map((dados) => ({
-    "Data do registro": formatarDataHoraBR(dados?.identificacao?.dataRegistro),
-    "Data ISO": dados?.identificacao?.dataRegistro || "",
-    "Nome do colaborador": dados?.identificacao?.nomeColaborador || "",
-    "Setor / Área": dados?.identificacao?.setorArea || "",
-    "Unidade / Local": dados?.identificacao?.unidadeLocal || "",
-    "Tipo de ocorrência": dados?.classificacao?.tipoOcorrencia || "",
-    "Categoria do risco": (dados?.classificacao?.categoriasRisco || []).join(", "),
-    "Outros riscos": dados?.classificacao?.categoriaOutrosTexto || "",
-    "Nível de risco": dados?.classificacao?.nivelRisco || "",
-    "Descrição da situação": dados?.descricao?.descricaoSituacao || "",
-    "Poderia causar lesão": dados?.descricao?.poderiaCausarLesao || "",
-    "Tipo de lesão": dados?.descricao?.tipoLesao || "",
-    "Ação imediata realizada": dados?.acaoImediata?.realizada || "",
-    "Descrição da ação imediata": dados?.acaoImediata?.descricao || "",
-    "Necessita plano de ação": dados?.planoAcao?.necessita || "",
-    "Responsável pela ação": dados?.planoAcao?.responsavel || "",
-    "Prazo para conclusão": dados?.planoAcao?.prazoConclusao || "",
-    "Status da ocorrência": dados?.acompanhamento?.statusOcorrencia || "",
-    "Responsável pela verificação": dados?.acompanhamento?.responsavelVerificacao || "",
-    "Data da verificação": dados?.acompanhamento?.dataVerificacao || "",
-    "Observações finais": dados?.acompanhamento?.observacoesFinais || "",
-    "Foto URL": dados?.evidencias?.fotoUrl || "",
-    "Última atualização": formatarTimestamp(dados.atualizadoEm || dados.criadoEm)
-  }));
-}
-
-function exportarExcel() {
-  const filtrados = getRegistrosFiltrados();
-
-  if (!filtrados.length) {
-    alert("Não há registros para exportar com os filtros atuais.");
-    return;
-  }
-
-  const linhas = gerarLinhasExcel(filtrados);
-  const ws = XLSX.utils.json_to_sheet(linhas);
-  const wb = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(wb, ws, "Quase-Acidente");
-
-  const nomeArquivo = `quase-acidente_${formatarDataArquivo()}.xlsx`;
-  XLSX.writeFile(wb, nomeArquivo);
-}
-
-// =========================
-// MODAL
-// =========================
 function montarItemDetalhe(titulo, valor) {
   return `
     <div class="detail-item">
-      <div class="detail-item-main">
-        <div class="detail-item-title">${escapeHtml(titulo)}</div>
-        <div class="detail-item-obs">${valor ? escapeHtml(valor) : "--"}</div>
-      </div>
+      <div class="detail-item-title">${escapeHtml(titulo)}</div>
+      <div class="detail-item-obs">${valor ? escapeHtml(valor) : "--"}</div>
     </div>
   `;
 }
@@ -650,11 +512,11 @@ function montarDetalhesModal(dados) {
     categorias.push(`Detalhe: ${dados.classificacao.categoriaOutrosTexto}`);
   }
 
-  const fotoHtml = dados?.evidencias?.fotoUrl
+  const fotoHtml = dados?.evidencias?.fotoBase64
     ? `
       <section class="detail-group">
         <h4>Foto da ocorrência</h4>
-        <img class="detail-photo" src="${dados.evidencias.fotoUrl}" alt="Foto da ocorrência" />
+        <img class="detail-photo" src="${dados.evidencias.fotoBase64}" alt="Foto da ocorrência" />
       </section>
     `
     : "";
@@ -673,12 +535,12 @@ function montarDetalhesModal(dados) {
 
       <div class="detail-box">
         <span>Nível de risco</span>
-        <strong><span class="status-badge ${nivelRiscoBadgeClass(dados?.classificacao?.nivelRisco)}">${escapeHtml(dados?.classificacao?.nivelRisco || "--")}</span></strong>
+        <strong>${escapeHtml(dados?.classificacao?.nivelRisco || "--")}</strong>
       </div>
 
       <div class="detail-box">
         <span>Status</span>
-        <strong><span class="status-badge ${statusBadgeClass(dados?.acompanhamento?.statusOcorrencia)}">${escapeHtml(dados?.acompanhamento?.statusOcorrencia || "--")}</span></strong>
+        <strong>${escapeHtml(dados?.acompanhamento?.statusOcorrencia || "--")}</strong>
       </div>
     </div>
 
@@ -746,8 +608,53 @@ function fecharModal() {
   document.body.style.overflow = "";
 }
 
+function obterImagemDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function carregarImagem(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function comprimirImagem(file) {
+  const dataUrlOriginal = await obterImagemDataURL(file);
+  const img = await carregarImagem(dataUrlOriginal);
+
+  let largura = img.width;
+  let altura = img.height;
+
+  if (largura > IMAGE_MAX_WIDTH) {
+    const proporcao = IMAGE_MAX_WIDTH / largura;
+    largura = IMAGE_MAX_WIDTH;
+    altura = Math.round(altura * proporcao);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = largura;
+  canvas.height = altura;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, largura, altura);
+
+  return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
+}
+
+function estimarTamanhoBase64(base64) {
+  return Math.round((base64.length * 3) / 4);
+}
+
 // =========================
-// EVENTOS
+// EVENTOS UI
 // =========================
 categoriaOutrosCheck.addEventListener("change", atualizarCamposCondicionais);
 
@@ -763,18 +670,36 @@ document.querySelectorAll('input[name="necessitaPlanoAcao"]').forEach((radio) =>
   radio.addEventListener("change", atualizarCamposCondicionais);
 });
 
-fotoOcorrencia.addEventListener("change", () => {
+fotoOcorrencia.addEventListener("change", async () => {
   const arquivo = fotoOcorrencia.files?.[0];
+
   if (!arquivo) {
-    exibirPreviewFoto(currentPhotoUrl || "");
+    exibirPreviewFoto(currentPhotoBase64 || "");
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    exibirPreviewFoto(e.target?.result || "");
-  };
-  reader.readAsDataURL(arquivo);
+  try {
+    setMensagem("Comprimindo imagem...");
+    const base64 = await comprimirImagem(arquivo);
+    const tamanhoEstimado = estimarTamanhoBase64(base64);
+
+    if (tamanhoEstimado > 700000) {
+      currentPhotoBase64 = "";
+      exibirPreviewFoto("");
+      setMensagem("A imagem ainda ficou muito grande. Escolha uma foto menor.", true);
+      fotoOcorrencia.value = "";
+      return;
+    }
+
+    currentPhotoBase64 = base64;
+    exibirPreviewFoto(base64);
+    setMensagem("Imagem pronta para salvar.");
+  } catch (error) {
+    console.error("Erro ao processar imagem:", error);
+    currentPhotoBase64 = "";
+    exibirPreviewFoto("");
+    setMensagem("Erro ao processar imagem.", true);
+  }
 });
 
 closeModalBtn.addEventListener("click", fecharModal);
@@ -824,7 +749,6 @@ modalDeleteBtn.addEventListener("click", async () => {
   } catch (error) {
     console.error("Erro ao excluir registro:", error);
     setMensagem(`Erro ao excluir registro: ${error.message}`, true);
-    alert(`Erro ao excluir registro: ${error.message}`);
   }
 });
 
@@ -836,7 +760,6 @@ btnVerMais.addEventListener("click", () => {
 btnVerMenos.addEventListener("click", () => {
   visibleCount = PAGE_SIZE;
   renderizarLista();
-  window.scrollTo({ top: document.querySelector(".panel.card:last-of-type")?.offsetTop || 0, behavior: "smooth" });
 });
 
 filtroNomeEl.addEventListener("input", () => {
@@ -868,16 +791,8 @@ btnLimparFiltros.addEventListener("click", () => {
   reaplicarRenderizacao();
 });
 
-btnExportarExcel.addEventListener("click", exportarExcel);
-
-lista.addEventListener("click", (e) => {
-  const card = e.target.closest("[data-open-id]");
-  if (!card) return;
-
-  const docId = card.getAttribute("data-open-id");
-  if (!docId) return;
-
-  abrirModal(docId);
+cancelEditBtn.addEventListener("click", () => {
+  limparFormulario();
 });
 
 // =========================
@@ -888,80 +803,61 @@ form.addEventListener("submit", async (e) => {
 
   try {
     submitBtn.disabled = true;
-
     atualizarCamposCondicionais();
+
     const dados = montarDadosFormulario();
     const erroValidacao = validarDados(dados);
 
     if (erroValidacao) {
       setMensagem(erroValidacao, true);
-      alert(erroValidacao);
+      submitBtn.disabled = false;
       return;
     }
 
-    const docId = editingDocId || crypto.randomUUID();
-    const docRef = doc(db, COLLECTION_NAME, docId);
+    const docId = editingDocId || doc(collection(db, COLLECTION_NAME)).id;
+    const dadosExistentes = currentDocsCache.find((item) => item.__docId === docId);
 
-    setMensagem(editingDocId ? "Atualizando registro..." : "Salvando registro...");
+    const payload = {
+      ...dados,
+      criadoEm: dadosExistentes?.criadoEm || serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    };
 
-    const { fotoUrl, fotoPath } = await fazerUploadFoto(docId);
-    dados.evidencias.fotoUrl = fotoUrl;
-    dados.evidencias.fotoPath = fotoPath;
-
-    await setDoc(
-      docRef,
-      {
-        ...dados,
-        ...(editingDocId ? {} : { criadoEm: serverTimestamp() }),
-        atualizadoEm: serverTimestamp()
-      },
-      { merge: true }
-    );
+    await setDoc(doc(db, COLLECTION_NAME, docId), payload, { merge: true });
 
     setMensagem(editingDocId ? "Registro atualizado com sucesso." : "Registro salvo com sucesso.");
     limparFormulario();
   } catch (error) {
-    console.error("Erro ao salvar:", error);
-    setMensagem(`Erro ao salvar: ${error.message}`, true);
-    alert(`Erro ao salvar: ${error.message}`);
+    console.error("Erro ao salvar registro:", error);
+    setMensagem(`Erro ao salvar registro: ${error.message}`, true);
   } finally {
     submitBtn.disabled = false;
   }
 });
 
 // =========================
-// CANCELAR EDIÇÃO
+// LISTENER FIRESTORE
 // =========================
-cancelEditBtn.addEventListener("click", () => {
-  limparFormulario();
-  setMensagem("Edição cancelada.");
+const q = query(collection(db, COLLECTION_NAME), orderBy("atualizadoEm", "desc"));
+
+onSnapshot(q, (snapshot) => {
+  currentDocsCache = snapshot.docs.map((docSnap) => ({
+    __docId: docSnap.id,
+    ...docSnap.data()
+  }));
+
+  reaplicarRenderizacao();
+}, (error) => {
+  console.error("Erro ao carregar registros:", error);
+  lista.innerHTML = `
+    <li class="empty-state">
+      <strong>Erro ao carregar registros.</strong>
+      <span>${escapeHtml(error.message || "Verifique as permissões do Firestore.")}</span>
+    </li>
+  `;
+  setMensagem(`Erro ao carregar registros: ${error.message}`, true);
 });
 
-// =========================
-// TEMPO REAL
-// =========================
-const colRef = collection(db, COLLECTION_NAME);
-const q = query(colRef, orderBy("identificacao.dataRegistro", "desc"));
-
-onSnapshot(
-  q,
-  (snapshot) => {
-    currentDocsCache = snapshot.docs.map((registro) => ({
-      __docId: registro.id,
-      ...registro.data()
-    }));
-
-    reaplicarRenderizacao();
-  },
-  (error) => {
-    console.error("Erro no onSnapshot:", error);
-    setMensagem(`Erro ao carregar registros: ${error.message}`, true);
-  }
-);
-
-// =========================
-// INICIALIZAÇÃO
-// =========================
 atualizarCamposCondicionais();
 atualizarModoFormulario();
 setMensagem("Sistema pronto para uso.");
