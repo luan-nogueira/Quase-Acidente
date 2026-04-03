@@ -1,39 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  serverTimestamp,
-  query,
-  orderBy
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 // =========================
-// FIREBASE
+// CONFIG LOCAL
 // =========================
-const firebaseConfig = {
-  apiKey: "AIzaSyAyEth1yYCKhk--z321-_muWnuLmPoVfEg",
-  authDomain: "quase-a.firebaseapp.com",
-  projectId: "quase-a",
-  storageBucket: "quase-a.firebasestorage.app",
-  messagingSenderId: "955542986429",
-  appId: "1:955542986429:web:e96a842814e22641f821d4",
-  measurementId: "G-R6825KWJMG"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// =========================
-// CONFIG
-// =========================
-const COLLECTION_NAME = "quase-acidentes";
+const STORAGE_KEY = "quase-acidentes-local";
 const PAGE_SIZE = 5;
-const IMAGE_MAX_WIDTH = 1280;
-const IMAGE_QUALITY = 0.72;
+const IMAGE_MAX_WIDTH = 960;
+const IMAGE_QUALITY = 0.65;
+const IMAGE_MAX_BYTES = 900000;
 
 // =========================
 // ELEMENTOS
@@ -120,6 +92,69 @@ function agoraLocalInput() {
 dataRegistro.value = agoraLocalInput();
 
 // =========================
+// STORAGE LOCAL
+// =========================
+function gerarId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function carregarRegistrosLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const dados = raw ? JSON.parse(raw) : [];
+    return Array.isArray(dados) ? dados : [];
+  } catch (error) {
+    console.error("Erro ao ler localStorage:", error);
+    return [];
+  }
+}
+
+function salvarListaLocal(lista) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+}
+
+function ordenarRegistros(lista) {
+  return [...lista].sort((a, b) => {
+    const dataA = new Date(b?.atualizadoEm || b?.criadoEm || 0).getTime();
+    const dataB = new Date(a?.atualizadoEm || a?.criadoEm || 0).getTime();
+    return dataA - dataB;
+  });
+}
+
+function sincronizarCacheLocal() {
+  currentDocsCache = ordenarRegistros(carregarRegistrosLocal());
+  reaplicarRenderizacao();
+}
+
+function salvarRegistroLocal(payload, docId) {
+  const lista = carregarRegistrosLocal();
+  const index = lista.findIndex((item) => item.__docId === docId);
+
+  if (index >= 0) {
+    lista[index] = {
+      ...lista[index],
+      ...payload,
+      __docId: docId
+    };
+  } else {
+    lista.push({
+      ...payload,
+      __docId: docId
+    });
+  }
+
+  salvarListaLocal(lista);
+  sincronizarCacheLocal();
+}
+
+function excluirRegistroLocal(docId) {
+  const lista = carregarRegistrosLocal().filter((item) => item.__docId !== docId);
+  salvarListaLocal(lista);
+  sincronizarCacheLocal();
+}
+
+// =========================
 // HELPERS
 // =========================
 function setMensagem(msg, erro = false) {
@@ -155,10 +190,7 @@ function formatarDataBR(valor) {
 
 function formatarTimestamp(timestamp) {
   if (!timestamp) return "--";
-  const data = typeof timestamp?.toDate === "function"
-    ? timestamp.toDate()
-    : new Date(timestamp);
-
+  const data = new Date(timestamp);
   if (Number.isNaN(data.getTime())) return "--";
 
   return data.toLocaleString("pt-BR", {
@@ -683,7 +715,7 @@ fotoOcorrencia.addEventListener("change", async () => {
     const base64 = await comprimirImagem(arquivo);
     const tamanhoEstimado = estimarTamanhoBase64(base64);
 
-    if (tamanhoEstimado > 700000) {
+    if (tamanhoEstimado > IMAGE_MAX_BYTES) {
       currentPhotoBase64 = "";
       exibirPreviewFoto("");
       setMensagem("A imagem ainda ficou muito grande. Escolha uma foto menor.", true);
@@ -714,6 +746,12 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+lista.addEventListener("click", (e) => {
+  const card = e.target.closest("[data-open-id]");
+  if (!card) return;
+  abrirModal(card.dataset.openId);
+});
+
 modalEditBtn.addEventListener("click", () => {
   if (!openedDocId) return;
 
@@ -728,7 +766,7 @@ modalEditBtn.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-modalDeleteBtn.addEventListener("click", async () => {
+modalDeleteBtn.addEventListener("click", () => {
   if (!openedDocId) return;
 
   const dados = currentDocsCache.find((item) => item.__docId === openedDocId);
@@ -737,19 +775,14 @@ modalDeleteBtn.addEventListener("click", async () => {
 
   if (!confirmar) return;
 
-  try {
-    await deleteDoc(doc(db, COLLECTION_NAME, openedDocId));
+  excluirRegistroLocal(openedDocId);
 
-    if (editingDocId === openedDocId) {
-      limparFormulario();
-    }
-
-    setMensagem("Registro excluído com sucesso.");
-    fecharModal();
-  } catch (error) {
-    console.error("Erro ao excluir registro:", error);
-    setMensagem(`Erro ao excluir registro: ${error.message}`, true);
+  if (editingDocId === openedDocId) {
+    limparFormulario();
   }
+
+  setMensagem("Registro excluído com sucesso.");
+  fecharModal();
 });
 
 btnVerMais.addEventListener("click", () => {
@@ -810,20 +843,20 @@ form.addEventListener("submit", async (e) => {
 
     if (erroValidacao) {
       setMensagem(erroValidacao, true);
-      submitBtn.disabled = false;
       return;
     }
 
-    const docId = editingDocId || doc(collection(db, COLLECTION_NAME)).id;
+    const docId = editingDocId || gerarId();
     const dadosExistentes = currentDocsCache.find((item) => item.__docId === docId);
+    const agora = new Date().toISOString();
 
     const payload = {
       ...dados,
-      criadoEm: dadosExistentes?.criadoEm || serverTimestamp(),
-      atualizadoEm: serverTimestamp()
+      criadoEm: dadosExistentes?.criadoEm || agora,
+      atualizadoEm: agora
     };
 
-    await setDoc(doc(db, COLLECTION_NAME, docId), payload, { merge: true });
+    salvarRegistroLocal(payload, docId);
 
     setMensagem(editingDocId ? "Registro atualizado com sucesso." : "Registro salvo com sucesso.");
     limparFormulario();
@@ -836,28 +869,9 @@ form.addEventListener("submit", async (e) => {
 });
 
 // =========================
-// LISTENER FIRESTORE
+// INÍCIO
 // =========================
-const q = query(collection(db, COLLECTION_NAME), orderBy("atualizadoEm", "desc"));
-
-onSnapshot(q, (snapshot) => {
-  currentDocsCache = snapshot.docs.map((docSnap) => ({
-    __docId: docSnap.id,
-    ...docSnap.data()
-  }));
-
-  reaplicarRenderizacao();
-}, (error) => {
-  console.error("Erro ao carregar registros:", error);
-  lista.innerHTML = `
-    <li class="empty-state">
-      <strong>Erro ao carregar registros.</strong>
-      <span>${escapeHtml(error.message || "Verifique as permissões do Firestore.")}</span>
-    </li>
-  `;
-  setMensagem(`Erro ao carregar registros: ${error.message}`, true);
-});
-
 atualizarCamposCondicionais();
 atualizarModoFormulario();
+sincronizarCacheLocal();
 setMensagem("Sistema pronto para uso.");
