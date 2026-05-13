@@ -128,6 +128,12 @@ let currentPhotoBase64 = "";
 let currentUploadedPhotoURL = "";
 let currentUploadedPhotoPath = "";
 
+// Instâncias dos gráficos (para destruir antes de recriar)
+let chartStatusInstance = null;
+let chartSetorInstance = null;
+let chartCategoriasInstance = null;
+let chartMensalInstance = null;
+
 // =========================
 // DATA E HORA
 // =========================
@@ -181,13 +187,10 @@ function formatarDataBR(valor) {
 
 function formatarTimestamp(timestamp) {
   if (!timestamp) return "--";
-
   const data = typeof timestamp?.toDate === "function"
     ? timestamp.toDate()
     : new Date(timestamp);
-
   if (Number.isNaN(data.getTime())) return "--";
-
   return data.toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -197,7 +200,6 @@ function formatarTimestamp(timestamp) {
 function mesmaDataLocal(dataA, dataB) {
   const a = new Date(dataA);
   const b = new Date(dataB);
-
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -243,7 +245,6 @@ function exibirPreviewFoto(src) {
     fotoPreview.removeAttribute("src");
     return;
   }
-
   fotoPreview.src = src;
   fotoPreviewWrap.classList.remove("hidden");
 }
@@ -318,35 +319,28 @@ function validarDados(dados) {
   if (!dados.identificacao.nomeColaborador) return "Informe o nome do colaborador.";
   if (!dados.identificacao.setorArea) return "Selecione o setor / área.";
   if (!dados.identificacao.unidadeLocal) return "Informe a unidade / local da ocorrência.";
-
   if (!dados.classificacao.tipoOcorrencia) return "Selecione o tipo de ocorrência.";
   if (!dados.classificacao.categoriasRisco.length) return "Selecione ao menos uma categoria de risco.";
   if (dados.classificacao.categoriasRisco.includes("Outros") && !dados.classificacao.categoriaOutrosTexto) {
     return "Descreva a categoria de risco em Outros.";
   }
   if (!dados.classificacao.nivelRisco) return "Selecione o nível de risco.";
-
   if (!dados.descricao.descricaoSituacao) return "Descreva a situação observada.";
   if (!dados.descricao.poderiaCausarLesao) return "Informe se a situação poderia causar lesão.";
   if (dados.descricao.poderiaCausarLesao === "Sim" && !dados.descricao.tipoLesao) {
     return "Descreva o tipo de lesão que poderia ocorrer.";
   }
-
   if (dados.acaoImediata.realizada === "Sim" && !dados.acaoImediata.descricao) {
     return "Descreva a ação imediata tomada.";
   }
-
   if (dados.planoAcao.necessita === "Sim") {
     if (!dados.planoAcao.responsavel) return "Informe o responsável pela ação.";
     if (!dados.planoAcao.prazoConclusao) return "Informe o prazo para conclusão.";
   }
-
-  if (!dados.acompanhamento.statusOcorrencia) {
-    return "Selecione o status da ocorrência.";
-  }
-
+  if (!dados.acompanhamento.statusOcorrencia) return "Selecione o status da ocorrência.";
   return "";
 }
+
 function atualizarModoFormulario() {
   const emEdicao = !!editingDocId;
   submitBtn.textContent = emEdicao ? "Atualizar registro" : "Salvar registro";
@@ -428,13 +422,10 @@ function getRegistrosFiltrados() {
   return currentDocsCache.filter((item) => {
     const nomeOk = !nome || String(item?.identificacao?.nomeColaborador || "").toLowerCase().includes(nome);
     const statusOk = !status || item?.acompanhamento?.statusOcorrencia === status;
-
     const dataBase = item?.identificacao?.dataRegistro || "";
     const dataISO = dataBase ? dataBase.slice(0, 10) : "";
-
     const inicioOk = !dataInicio || (dataISO && dataISO >= dataInicio);
     const fimOk = !dataFim || (dataISO && dataISO <= dataFim);
-
     return nomeOk && statusOk && inicioOk && fimOk;
   });
 }
@@ -447,7 +438,6 @@ function montarCard(dados) {
   const nivel = dados?.classificacao?.nivelRisco || "--";
 
   let chipStatus = `<span class="alert-chip">${escapeHtml(status)}</span>`;
-
   if (String(status).toLowerCase() === "concluído" || String(status).toLowerCase() === "concluido") {
     chipStatus = `<span class="done-chip">✅ ${escapeHtml(status)}</span>`;
   } else if (nivelRiscoAlto(dados)) {
@@ -463,7 +453,6 @@ function montarCard(dados) {
             ${escapeHtml(setor)} • ${formatarDataHoraBR(data)} • ${escapeHtml(nivel)}
           </p>
         </div>
-
         <div class="status-card-mini-content">
           <span class="card-date">${formatarTimestamp(dados.atualizadoEm || dados.criadoEm)}</span>
           ${chipStatus}
@@ -555,17 +544,14 @@ function montarDetalhesModal(dados) {
         <span>Colaborador</span>
         <strong>${escapeHtml(dados?.identificacao?.nomeColaborador || "--")}</strong>
       </div>
-
       <div class="detail-box">
         <span>Data do registro</span>
         <strong>${formatarDataHoraBR(dados?.identificacao?.dataRegistro)}</strong>
       </div>
-
       <div class="detail-box">
         <span>Nível de risco</span>
         <strong>${escapeHtml(dados?.classificacao?.nivelRisco || "--")}</strong>
       </div>
-
       <div class="detail-box">
         <span>Status</span>
         <strong>${escapeHtml(dados?.acompanhamento?.statusOcorrencia || "--")}</strong>
@@ -682,12 +668,7 @@ function estimarTamanhoBase64(base64) {
 }
 
 async function uploadFotoBase64(base64, docId) {
-  if (!base64) {
-    return {
-      url: "",
-      path: ""
-    };
-  }
+  if (!base64) return { url: "", path: "" };
 
   const caminho = `quase-acidentes/${docId}/${Date.now()}.jpg`;
   const storageRef = ref(storage, caminho);
@@ -695,10 +676,7 @@ async function uploadFotoBase64(base64, docId) {
   await uploadString(storageRef, base64, "data_url");
   const downloadURL = await getDownloadURL(storageRef);
 
-  return {
-    url: downloadURL,
-    path: caminho
-  };
+  return { url: downloadURL, path: caminho };
 }
 
 async function excluirFotoStorage(path) {
@@ -709,6 +687,306 @@ async function excluirFotoStorage(path) {
   } catch (error) {
     console.warn("Não foi possível excluir a foto antiga do Storage:", error);
   }
+}
+
+// =========================
+// GRÁFICOS
+// =========================
+const CHART_COLORS = {
+  azul:     "#2563eb",
+  verde:    "#16a34a",
+  amarelo:  "#d97706",
+  vermelho: "#dc2626",
+  cinza:    "#94a3b8",
+  roxo:     "#7c3aed",
+  ciano:    "#0891b2",
+  rosa:     "#db2777",
+};
+
+const CHART_DEFAULTS = {
+  font: {
+    family: "Arial, Helvetica, sans-serif",
+    size: 12
+  }
+};
+
+function destruirGrafico(instancia) {
+  if (instancia) {
+    try { instancia.destroy(); } catch (_) {}
+  }
+  return null;
+}
+
+function atualizarGraficos(registros) {
+  atualizarChartStatus(registros);
+  atualizarChartSetor(registros);
+  atualizarChartCategorias(registros);
+  atualizarChartMensal(registros);
+}
+
+// --- Gráfico 1: Donut — Status ---
+function atualizarChartStatus(registros) {
+  const canvas = document.getElementById("chartStatus");
+  if (!canvas) return;
+
+  chartStatusInstance = destruirGrafico(chartStatusInstance);
+
+  const contagem = { "Aberto": 0, "Em andamento": 0, "Concluído": 0 };
+  registros.forEach((item) => {
+    const s = item?.acompanhamento?.statusOcorrencia || "";
+    if (contagem[s] !== undefined) contagem[s]++;
+  });
+
+  const labels = Object.keys(contagem);
+  const valores = Object.values(contagem);
+  const total = valores.reduce((a, b) => a + b, 0);
+
+  if (!total) {
+    canvas.parentElement.innerHTML = `<canvas id="chartStatus"></canvas><p class="chart-empty">Sem dados ainda</p>`;
+    return;
+  }
+
+  chartStatusInstance = new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: [CHART_COLORS.amarelo, CHART_COLORS.azul, CHART_COLORS.verde],
+        borderColor: "#ffffff",
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            ...CHART_DEFAULTS.font,
+            padding: 12,
+            usePointStyle: true,
+            pointStyleWidth: 10
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${ctx.raw} (${Math.round((ctx.raw / total) * 100)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// --- Gráfico 2: Barras horizontais — Por setor ---
+function atualizarChartSetor(registros) {
+  const canvas = document.getElementById("chartSetor");
+  if (!canvas) return;
+
+  chartSetorInstance = destruirGrafico(chartSetorInstance);
+
+  const contagem = {};
+  registros.forEach((item) => {
+    const setor = item?.identificacao?.setorArea || "Não informado";
+    contagem[setor] = (contagem[setor] || 0) + 1;
+  });
+
+  const entradas = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+  const labels = entradas.map(([k]) => k);
+  const valores = entradas.map(([, v]) => v);
+
+  if (!labels.length) {
+    canvas.parentElement.innerHTML = `<canvas id="chartSetor"></canvas><p class="chart-empty">Sem dados ainda</p>`;
+    return;
+  }
+
+  chartSetorInstance = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Ocorrências",
+        data: valores,
+        backgroundColor: CHART_COLORS.azul,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw} ocorrência${ctx.raw !== 1 ? "s" : ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: "#e8eef6" },
+          ticks: { ...CHART_DEFAULTS.font, stepSize: 1, precision: 0 }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { ...CHART_DEFAULTS.font }
+        }
+      }
+    }
+  });
+}
+
+// --- Gráfico 3: Barras — Categorias de risco ---
+function atualizarChartCategorias(registros) {
+  const canvas = document.getElementById("chartCategorias");
+  if (!canvas) return;
+
+  chartCategoriasInstance = destruirGrafico(chartCategoriasInstance);
+
+  const contagem = {};
+  registros.forEach((item) => {
+    const cats = item?.classificacao?.categoriasRisco || [];
+    cats.forEach((cat) => {
+      contagem[cat] = (contagem[cat] || 0) + 1;
+    });
+  });
+
+  const entradas = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+  const labels = entradas.map(([k]) => k);
+  const valores = entradas.map(([, v]) => v);
+
+  const cores = [
+    CHART_COLORS.vermelho, CHART_COLORS.amarelo, CHART_COLORS.azul,
+    CHART_COLORS.roxo, CHART_COLORS.ciano, CHART_COLORS.rosa,
+    CHART_COLORS.verde, CHART_COLORS.cinza
+  ];
+
+  if (!labels.length) {
+    canvas.parentElement.innerHTML = `<canvas id="chartCategorias"></canvas><p class="chart-empty">Sem dados ainda</p>`;
+    return;
+  }
+
+  chartCategoriasInstance = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Ocorrências",
+        data: valores,
+        backgroundColor: labels.map((_, i) => cores[i % cores.length]),
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw} ocorrência${ctx.raw !== 1 ? "s" : ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            ...CHART_DEFAULTS.font,
+            maxRotation: 30,
+            callback: function(val) {
+              const label = this.getLabelForValue(val);
+              return label.length > 14 ? label.slice(0, 13) + "…" : label;
+            }
+          }
+        },
+        y: {
+          grid: { color: "#e8eef6" },
+          ticks: { ...CHART_DEFAULTS.font, stepSize: 1, precision: 0 }
+        }
+      }
+    }
+  });
+}
+
+// --- Gráfico 4: Linha — Ocorrências por mês ---
+function atualizarChartMensal(registros) {
+  const canvas = document.getElementById("chartMensal");
+  if (!canvas) return;
+
+  chartMensalInstance = destruirGrafico(chartMensalInstance);
+
+  // Agrupa por ano-mês dos últimos 12 meses
+  const hoje = new Date();
+  const meses = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleString("pt-BR", { month: "short", year: "2-digit" });
+    meses.push({ chave, label, total: 0 });
+  }
+
+  registros.forEach((item) => {
+    const dataStr = item?.identificacao?.dataRegistro || "";
+    if (!dataStr) return;
+    const chave = dataStr.slice(0, 7); // "YYYY-MM"
+    const entrada = meses.find((m) => m.chave === chave);
+    if (entrada) entrada.total++;
+  });
+
+  const labels = meses.map((m) => m.label);
+  const valores = meses.map((m) => m.total);
+
+  chartMensalInstance = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Ocorrências",
+        data: valores,
+        borderColor: CHART_COLORS.azul,
+        backgroundColor: "rgba(37, 99, 235, 0.08)",
+        borderWidth: 2.5,
+        pointBackgroundColor: CHART_COLORS.azul,
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw} ocorrência${ctx.raw !== 1 ? "s" : ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { ...CHART_DEFAULTS.font }
+        },
+        y: {
+          grid: { color: "#e8eef6" },
+          ticks: { ...CHART_DEFAULTS.font, stepSize: 1, precision: 0 },
+          min: 0
+        }
+      }
+    }
+  });
 }
 
 // =========================
@@ -782,7 +1060,6 @@ lista.addEventListener("click", (e) => {
 
 modalEditBtn.addEventListener("click", () => {
   if (!openedDocId) return;
-
   const dados = currentDocsCache.find((item) => item.__docId === openedDocId);
   if (!dados) return;
 
@@ -800,7 +1077,6 @@ modalDeleteBtn.addEventListener("click", async () => {
   const dados = currentDocsCache.find((item) => item.__docId === openedDocId);
   const nome = dados?.identificacao?.nomeColaborador || "este registro";
   const confirmar = confirm(`Deseja realmente excluir o registro de ${nome}?`);
-
   if (!confirmar) return;
 
   try {
@@ -897,7 +1173,6 @@ form.addEventListener("submit", async (e) => {
         if (fotoPath && fotoPath !== upload.path) {
           await excluirFotoStorage(fotoPath);
         }
-
         fotoURL = upload.url;
         fotoPath = upload.path;
       }
@@ -905,10 +1180,7 @@ form.addEventListener("submit", async (e) => {
 
     const payload = {
       ...dados,
-      evidencias: {
-        fotoURL,
-        fotoPath
-      },
+      evidencias: { fotoURL, fotoPath },
       criadoEm: dadosExistentes?.criadoEm || serverTimestamp(),
       atualizadoEm: serverTimestamp()
     };
@@ -937,6 +1209,7 @@ onSnapshot(q, (snapshot) => {
   }));
 
   reaplicarRenderizacao();
+  atualizarGraficos(currentDocsCache);
 }, (error) => {
   console.error("Erro ao carregar registros:", error);
   lista.innerHTML = `
