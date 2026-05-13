@@ -642,14 +642,70 @@ input:focus, textarea:focus, select:focus{
   background: #fff;
 }
 
+/* ===========================
+   DASHBOARD DE GRÁFICOS
+   =========================== */
+.charts-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.chart-box{
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.chart-box-wide{
+  grid-column: span 3;
+}
+
+.chart-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+
+.chart-wrap{
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-wrap-line{
+  height: 200px;
+}
+
+.chart-empty{
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ===========================
+   UTILITÁRIOS
+   =========================== */
 .hidden{
   display: none !important;
 }
 
+/* ===========================
+   RESPONSIVO
+   =========================== */
 @media (max-width: 1080px){
   .summary-grid-6{ grid-template-columns: repeat(3, 1fr); }
   .summary-card.wide{ grid-column: span 1; }
   .filters-bar-advanced{ grid-template-columns: 1fr 1fr; }
+  .charts-grid{ grid-template-columns: repeat(2, 1fr); }
+  .chart-box-wide{ grid-column: span 2; }
 }
 
 @media (max-width: 820px){
@@ -662,6 +718,14 @@ input:focus, textarea:focus, select:focus{
 
   .summary-grid-6{
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts-grid{
+    grid-template-columns: 1fr;
+  }
+
+  .chart-box-wide{
+    grid-column: span 1;
   }
 
   .mobile-app{
