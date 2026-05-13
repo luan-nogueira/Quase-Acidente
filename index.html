@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quase-Acidente</title>
-
   <meta name="theme-color" content="#0a192f" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -27,31 +26,62 @@
           <span class="summary-label">Registros</span>
           <strong id="totalRegistros">0</strong>
         </article>
-
         <article class="summary-card alert">
           <span class="summary-label">Abertos</span>
           <strong id="totalAbertos">0</strong>
         </article>
-
         <article class="summary-card danger-soft">
           <span class="summary-label">Risco alto/crítico</span>
           <strong id="totalRiscoAlto">0</strong>
         </article>
-
         <article class="summary-card">
           <span class="summary-label">Com plano de ação</span>
           <strong id="totalPlano">0</strong>
         </article>
-
         <article class="summary-card">
           <span class="summary-label">Registros hoje</span>
           <strong id="totalHoje">0</strong>
         </article>
-
         <article class="summary-card wide">
           <span class="summary-label">Última atualização</span>
           <strong id="ultimaAtualizacao">--</strong>
         </article>
+      </section>
+
+      <!-- DASHBOARD DE GRÁFICOS -->
+      <section class="panel card">
+        <div class="section-head">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Visão analítica dos registros</p>
+          </div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-box">
+            <div class="chart-title">Status dos registros</div>
+            <div class="chart-wrap">
+              <canvas id="chartStatus"></canvas>
+            </div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Ocorrências por setor</div>
+            <div class="chart-wrap">
+              <canvas id="chartSetor"></canvas>
+            </div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Categorias de risco</div>
+            <div class="chart-wrap">
+              <canvas id="chartCategorias"></canvas>
+            </div>
+          </div>
+          <div class="chart-box chart-box-wide">
+            <div class="chart-title">Ocorrências por mês</div>
+            <div class="chart-wrap chart-wrap-line">
+              <canvas id="chartMensal"></canvas>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="panel card">
@@ -68,20 +98,17 @@
               <h3>1. Identificação</h3>
               <p>Dados iniciais do registro.</p>
             </div>
-
             <div class="checklist-items">
               <div class="grid-2">
                 <div class="field">
                   <label for="dataRegistro">Data do registro</label>
                   <input type="datetime-local" id="dataRegistro" required />
                 </div>
-
                 <div class="field">
                   <label for="nomeColaborador">Nome do colaborador</label>
                   <input type="text" id="nomeColaborador" placeholder="Digite o nome" required />
                 </div>
               </div>
-
               <div class="grid-2">
                 <div class="field">
                   <label for="setorArea">Setor / Área</label>
@@ -94,7 +121,6 @@
                     <option value="Outros">Outros</option>
                   </select>
                 </div>
-
                 <div class="field">
                   <label for="unidadeLocal">Unidade / Local da ocorrência</label>
                   <input type="text" id="unidadeLocal" placeholder="Ex.: Pier, Área 1, Oficina..." required />
@@ -108,28 +134,17 @@
               <h3>2. Classificação</h3>
               <p>Classifique o tipo e o nível do risco.</p>
             </div>
-
             <div class="checklist-items">
               <article class="check-item">
                 <div class="field full">
                   <label>Tipo de ocorrência</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="tipoOcorrencia" value="Condição insegura" required />
-                      Condição insegura
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="tipoOcorrencia" value="Ato inseguro" />
-                      Ato inseguro
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="tipoOcorrencia" value="Quase acidente (Near Miss)" />
-                      Quase acidente (Near Miss)
-                    </label>
+                    <label class="option-pill"><input type="radio" name="tipoOcorrencia" value="Condição insegura" required /> Condição insegura</label>
+                    <label class="option-pill"><input type="radio" name="tipoOcorrencia" value="Ato inseguro" /> Ato inseguro</label>
+                    <label class="option-pill"><input type="radio" name="tipoOcorrencia" value="Quase acidente (Near Miss)" /> Quase acidente (Near Miss)</label>
                   </div>
                 </div>
               </article>
-
               <article class="check-item">
                 <div class="field full">
                   <label>Categoria do risco</label>
@@ -144,33 +159,19 @@
                     <label class="check-inline"><input type="checkbox" id="categoriaOutrosCheck" name="categoriaRisco" value="Outros" /> Outros</label>
                   </div>
                 </div>
-
                 <div class="field full hidden" id="categoriaOutrosWrap">
                   <label for="categoriaOutrosTexto">Descreva o(s) outro(s) risco(s)</label>
                   <input type="text" id="categoriaOutrosTexto" placeholder="Digite a categoria adicional" />
                 </div>
               </article>
-
               <article class="check-item">
                 <div class="field full">
                   <label>Nível de risco</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="nivelRisco" value="Baixo" required />
-                      Baixo
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="nivelRisco" value="Médio" />
-                      Médio
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="nivelRisco" value="Alto" />
-                      Alto
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="nivelRisco" value="Crítico" />
-                      Crítico
-                    </label>
+                    <label class="option-pill"><input type="radio" name="nivelRisco" value="Baixo" required /> Baixo</label>
+                    <label class="option-pill"><input type="radio" name="nivelRisco" value="Médio" /> Médio</label>
+                    <label class="option-pill"><input type="radio" name="nivelRisco" value="Alto" /> Alto</label>
+                    <label class="option-pill"><input type="radio" name="nivelRisco" value="Crítico" /> Crítico</label>
                   </div>
                 </div>
               </article>
@@ -182,29 +183,20 @@
               <h3>3. Descrição</h3>
               <p>Descreva a situação observada com detalhes.</p>
             </div>
-
             <div class="checklist-items">
               <div class="field full">
                 <label for="descricaoSituacao">Descreva a situação observada</label>
                 <textarea id="descricaoSituacao" placeholder="Detalhe o máximo possível o ocorrido." required></textarea>
               </div>
-
               <article class="check-item">
                 <div class="field full">
                   <label>Essa situação poderia causar lesão?</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="poderiaCausarLesao" value="Sim" required />
-                      Sim
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="poderiaCausarLesao" value="Não" />
-                      Não
-                    </label>
+                    <label class="option-pill"><input type="radio" name="poderiaCausarLesao" value="Sim" required /> Sim</label>
+                    <label class="option-pill"><input type="radio" name="poderiaCausarLesao" value="Não" /> Não</label>
                   </div>
                 </div>
               </article>
-
               <div class="field full hidden" id="tipoLesaoWrap">
                 <label for="tipoLesao">Se sim, qual tipo de lesão poderia ocorrer?</label>
                 <textarea id="tipoLesao" placeholder="Ex.: corte, fratura, choque elétrico, contusão..."></textarea>
@@ -217,14 +209,12 @@
               <h3>4. Evidências</h3>
               <p>Anexe uma foto da situação observada.</p>
             </div>
-
             <div class="checklist-items">
               <div class="field full">
                 <label for="fotoOcorrencia">Anexar foto da situação</label>
                 <input type="file" id="fotoOcorrencia" accept="image/*" />
                 <small class="helper-note">A imagem será comprimida e enviada para o Firebase Storage.</small>
               </div>
-
               <div class="photo-preview hidden" id="fotoPreviewWrap">
                 <img id="fotoPreview" alt="Pré-visualização da foto" />
               </div>
@@ -236,24 +226,16 @@
               <h3>5. Ação imediata</h3>
               <p>Informe se houve ação imediata e qual foi.</p>
             </div>
-
             <div class="checklist-items">
               <article class="check-item">
                 <div class="field full">
                   <label>Foi realizada alguma ação imediata?</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="acaoImediataRealizada" value="Sim" required />
-                      Sim
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="acaoImediataRealizada" value="Não" />
-                      Não
-                    </label>
+                    <label class="option-pill"><input type="radio" name="acaoImediataRealizada" value="Sim" required /> Sim</label>
+                    <label class="option-pill"><input type="radio" name="acaoImediataRealizada" value="Não" /> Não</label>
                   </div>
                 </div>
               </article>
-
               <div class="field full hidden" id="acaoTomadaWrap">
                 <label for="acaoTomada">Descreva a ação tomada</label>
                 <textarea id="acaoTomada" placeholder="Descreva a ação imediata realizada"></textarea>
@@ -266,30 +248,21 @@
               <h3>6. Plano de ação</h3>
               <p>Preencha quando houver necessidade de tratativa.</p>
             </div>
-
             <div class="checklist-items">
               <article class="check-item">
                 <div class="field full">
                   <label>Necessita plano de ação?</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="necessitaPlanoAcao" value="Sim" required />
-                      Sim
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="necessitaPlanoAcao" value="Não" />
-                      Não
-                    </label>
+                    <label class="option-pill"><input type="radio" name="necessitaPlanoAcao" value="Sim" required /> Sim</label>
+                    <label class="option-pill"><input type="radio" name="necessitaPlanoAcao" value="Não" /> Não</label>
                   </div>
                 </div>
               </article>
-
               <div class="grid-2 hidden" id="planoAcaoWrap">
                 <div class="field">
                   <label for="responsavelAcao">Responsável pela ação</label>
                   <input type="text" id="responsavelAcao" placeholder="Nome do responsável" />
                 </div>
-
                 <div class="field">
                   <label for="prazoConclusao">Prazo para conclusão</label>
                   <input type="date" id="prazoConclusao" />
@@ -303,40 +276,27 @@
               <h3>7. Acompanhamento</h3>
               <p>Campos para acompanhamento, verificação e conclusão.</p>
             </div>
-
             <div class="checklist-items">
               <article class="check-item">
                 <div class="field full">
                   <label>Status da ocorrência</label>
                   <div class="option-group">
-                    <label class="option-pill">
-                      <input type="radio" name="statusOcorrencia" value="Aberto" required />
-                      Aberto
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="statusOcorrencia" value="Em andamento" />
-                      Em andamento
-                    </label>
-                    <label class="option-pill">
-                      <input type="radio" name="statusOcorrencia" value="Concluído" />
-                      Concluído
-                    </label>
+                    <label class="option-pill"><input type="radio" name="statusOcorrencia" value="Aberto" required /> Aberto</label>
+                    <label class="option-pill"><input type="radio" name="statusOcorrencia" value="Em andamento" /> Em andamento</label>
+                    <label class="option-pill"><input type="radio" name="statusOcorrencia" value="Concluído" /> Concluído</label>
                   </div>
                 </div>
               </article>
-
               <div class="grid-2">
                 <div class="field">
                   <label for="responsavelVerificacao">Responsável pela verificação</label>
                   <input type="text" id="responsavelVerificacao" placeholder="Nome do responsável" />
                 </div>
-
                 <div class="field">
                   <label for="dataVerificacao">Data da verificação</label>
                   <input type="date" id="dataVerificacao" />
                 </div>
               </div>
-
               <div class="field full">
                 <label for="observacoesFinais">Observações finais / evidência de conclusão</label>
                 <textarea id="observacoesFinais" placeholder="Descreva a conclusão, evidências e observações finais"></textarea>
@@ -359,13 +319,11 @@
             <h2>Registros</h2>
             <p>Clique no card para ver, editar ou excluir</p>
           </div>
-
           <div class="filters-bar filters-bar-advanced">
             <div class="field">
               <label for="filtroNome">Buscar por colaborador</label>
               <input type="text" id="filtroNome" placeholder="Digite o nome..." />
             </div>
-
             <div class="field">
               <label for="filtroStatus">Status</label>
               <select id="filtroStatus">
@@ -375,25 +333,21 @@
                 <option value="Concluído">Concluído</option>
               </select>
             </div>
-
             <div class="field">
               <label for="filtroDataInicio">Data inicial</label>
               <input type="date" id="filtroDataInicio" />
             </div>
-
             <div class="field">
               <label for="filtroDataFim">Data final</label>
               <input type="date" id="filtroDataFim" />
             </div>
           </div>
-
           <div class="toolbar-bar">
             <button class="btn btn-light" id="btnLimparFiltros" type="button">Limpar filtros</button>
             <button class="btn btn-light" id="btnVerMais" type="button">Ver mais</button>
             <button class="btn btn-light" id="btnVerMenos" type="button">Ver menos</button>
           </div>
         </div>
-
         <ul class="records-list" id="lista"></ul>
       </section>
     </main>
@@ -408,9 +362,7 @@
         </div>
         <button class="modal-close" id="closeModalBtn" type="button">✕</button>
       </div>
-
       <div class="modal-body" id="modalBody"></div>
-
       <div class="modal-actions">
         <button class="btn btn-light" id="modalEditBtn" type="button">Editar</button>
         <button class="btn btn-danger" id="modalDeleteBtn" type="button">Excluir</button>
@@ -418,6 +370,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
